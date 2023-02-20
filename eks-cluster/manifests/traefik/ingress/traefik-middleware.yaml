@@ -1,0 +1,102 @@
+---
+# Enable gzip compression
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: web-compress
+  namespace: traefik-ingress
+  labels:
+    environment: theapp
+    method: traefik
+spec:
+  compress: {}
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: web-log4shell
+  namespace: traefik-ingress
+  labels:
+    environment: theapp
+    method: traefik
+spec:
+  plugin:
+    log4shell:
+      errorCode: 200
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: web-geoip2
+  namespace: traefik-ingress
+  labels:
+    environment: theapp
+    method: traefik
+spec:
+  plugin:
+    geoip2:
+      dbPath: "/var/lib/geoip2/GeoLite2-City.mmdb"
+      headers:
+        ContinentCode:  geoip2_data_continent_code
+        ContinentName:  geoip2_data_continent_name
+        CountryCode:    geoip2_data_country_code
+        CountryName:    geoip2_data_country_name
+        City:           geoip2_city
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: web-header
+  namespace: traefik-ingress
+  labels:
+    environment: theapp
+    method: traefik
+spec:
+  headers:
+# Security
+    frameDeny: false
+    browserXssFilter: true
+    contentTypeNosniff: false
+    forceSTSHeader: true
+    stsSeconds: 63072000
+    stsIncludeSubdomains: true
+    stsPreload: true
+    accessControlAllowCredentials: true
+    accessControlAllowHeaders:
+      - Accept
+      - Authorization
+      - Cache-Control
+      - Content-Type
+      - DNT
+      - If-Modified-Since
+      - Keep-Alive
+      - Origin
+      - User-Agent
+      - X-Requested-With
+# CORS
+    accessControlAllowMethods:
+      - "GET"
+      - "PUT"
+      - "POST"
+      - "OPTIONS"
+      - "DELETE"
+    accessControlAllowOriginList:
+      - "*"
+    accessControlMaxAge: 63072000
+    addVaryHeader: true
+    customRequestHeaders:
+      X-Forwarded-Proto: "https"
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: web-proxybuffering
+  namespace: traefik-ingress
+  labels:
+    environment: theapp
+    method: traefik
+spec:
+  buffering:
+    maxRequestBodyBytes: 838860800
+    memRequestBodyBytes: 138860800
+    retryExpression: "IsNetworkError() && Attempts() < 2"

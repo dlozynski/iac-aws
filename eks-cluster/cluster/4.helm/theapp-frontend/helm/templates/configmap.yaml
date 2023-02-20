@@ -1,0 +1,29 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $.Chart.Name }}-configmap
+  labels:
+    app: {{ $.Chart.Name }}
+data:
+{{- range $k, $v :=  .Values.configs }}
+  {{$k}}: {{quote $v}}
+{{- end }}
+{{if ( .Values.container.robots )}}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: robots-configmap
+data:
+  robots.txt: |
+    # Przykład 2: blokowanie robotów Googlebot i Adsbot
+    User-agent: AdsBot-Google
+    User-agent: AdsBot-Google-Mobile
+    User-agent: AdsBot-Google-Mobile-Apps
+    Disallow: /
+
+    # Przykład 3: blokowanie wszystkich robotów poza AdsBot
+    User-agent: *
+    Disallow: /
+{{ end }}

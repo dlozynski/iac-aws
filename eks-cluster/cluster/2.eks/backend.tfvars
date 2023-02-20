@@ -1,0 +1,7 @@
+# region_state_backend = "eu-west-1"
+region                 = "eu-west-1"
+profile                 = "default"
+bucket                 = "tf-state-iac"
+dynamodb_table         = "global.tf-state-lock"
+key                    = "terraform/production/eks.tfstate"
+workspace_key_prefix    = "terraform/production"

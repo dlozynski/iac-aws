@@ -1,0 +1,28 @@
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  namespace: theapp
+  name: theapp-frontend
+spec:
+  entryPoints:
+  - websecure
+  - web
+  routes:
+  - kind: Rule
+    match: Host(`dev.theapp.co`) && ( PathPrefix(`/settings`) || PathPrefix(`/account`) || PathPrefix(`/subscribe`) || PathPrefix(`/static`) )
+    services:
+    - name: theapp-frontend
+      port: 7070
+      sticky:
+        cookie:
+          httpOnly: true
+          name: theapp
+          secure: true
+          sameSite: none
+    middlewares:
+      - name: web-compress
+      - name: web-log4shell
+      - name: web-geoip2
+      - name: web-header
+      - name: web-proxybuffering

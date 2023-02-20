@@ -1,0 +1,92 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    reloader.stakater.com/auto: "true"
+  labels:
+    app: {{ .Chart.Name }}
+    env: {{ .Values.container.env }}
+    region: {{ .Values.container.region }}
+    subregion: {{ .Values.container.subregion }}
+  name: {{ .Chart.Name }}
+spec:
+  progressDeadlineSeconds: {{ .Values.container.progressDeadlineSeconds }}
+  replicas: {{ .Values.container.replicas }}
+  revisionHistoryLimit: {{ .Values.container.revisionHistoryLimit }}
+  selector:
+    matchLabels:
+      app: {{ .Chart.Name }}
+      env: {{ .Values.container.env }}
+      region: {{ .Values.container.region }}
+      subregion: {{ .Values.container.subregion }}
+  strategy:
+    rollingUpdate:
+      maxSurge: {{ .Values.container.maxSurge }}
+      maxUnavailable: {{ .Values.container.maxUnavailable }}
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: {{ .Chart.Name }}
+        env: {{ .Values.container.env }}
+        region: {{ .Values.container.region }}
+        subregion: {{ .Values.container.subregion }}
+    # annotations:
+    #   rollme: {{ randAlphaNum 5 | quote }}
+    spec:
+      containers:
+      - envFrom:
+          {{if ( .Values.secrets )}}
+          - secretRef:
+              name: {{ .Chart.Name }}-secret
+          {{ end }}
+          - configMapRef:
+              name: {{ .Chart.Name }}-configmap
+        image: {{ .Values.container.image }}:{{ .Values.container.tag }}
+        imagePullPolicy: Always
+        name: {{ .Chart.Name }}
+        resources:
+          limits:
+            memory: {{ .Values.container.resources.limits.memory }}
+          requests:
+            memory: {{ .Values.container.resources.requests.memory }}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        livenessProbe:
+          httpGet:
+            path: /getHealth
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 35
+          periodSeconds: 3
+        readinessProbe:
+          httpGet:
+            path: /getHealth
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 35
+          periodSeconds: 3
+        {{if ( .Values.container.robots )}}
+        volumeMounts:
+        - name: robots-config
+          mountPath: /usr/share/nginx/html/robots.txt
+          subPath: robots.txt
+          readOnly: true
+        {{ end }}
+        ports:
+        - containerPort: {{ .Values.container.port }}
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      terminationGracePeriodSeconds: 30
+      {{if ( .Values.container.robots )}}
+      volumes:
+      - name: robots-config
+        configMap:
+          name: robots-configmap
+      {{ end }}
+      tolerations:
+        - key: node.kubernetes.io/unschedulable
+          operator: Exists
+          effect: NoSchedule

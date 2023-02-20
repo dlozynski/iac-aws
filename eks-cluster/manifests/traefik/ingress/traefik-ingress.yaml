@@ -1,0 +1,22 @@
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: traefik-dashboard-production
+  namespace: traefik-ingress
+  labels:
+    environment: production
+    method: traefik
+  annotations:
+      kubernetes.io/ingress.class: ingress-traefik-production
+spec:
+  entryPoints:
+  - websecure
+  - web
+  routes:
+  - kind: Rule
+    match: Host(`traefik.theapp.co`)
+    services:
+    - kind: TraefikService
+      name: api@internal
+  # tls: {}

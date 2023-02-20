@@ -1,0 +1,111 @@
+image:
+  name: 12341234.dkr.ecr.eu-west-1.amazonaws.com/traefik
+  tag: "2.7-280084e"
+
+ingressRoute:
+  dashboard:
+    enabled: false
+    annotations:
+      kubernetes.io/ingress.class: ingress-traefik-production
+
+# Activate Pilot integration
+pilot:
+  enabled: true
+  token:
+  # Toggle Pilot Dashboard
+  dashboard: true
+
+# Enable experimental features
+experimental:
+  plugins:
+    enabled: true
+
+#
+# Configure providers
+#
+providers:
+  kubernetesCRD:
+    enabled: true
+    allowCrossNamespace: true
+    ingressClass: ingress-traefik-production
+    labelSelector: environment=production,method=traefik
+    namespaces: []
+  kubernetesIngress:
+    enabled: true
+    ingressClass: ingress-traefik-production
+    labelSelector: environment=production,method=traefik
+    namespaces: []
+
+additionalArguments:
+  - "--api"
+  - "--api.dashboard=true"
+  - "--experimental.plugins.log4shell.modulename=github.com/traefik/plugin-log4shell"
+  - "--experimental.plugins.log4shell.version=v0.1.2"
+  - "--experimental.localPlugins.geoip2.moduleName=github.com/dlozynski/traefikgeoip2"
+
+# Options for the main traefik service, where the entrypoints traffic comes
+# from.
+service:
+  enabled: true
+  type: LoadBalancer
+  # type: NodePort
+  spec:
+    externalTrafficPolicy: Local
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-name: "production-lb"
+    service.beta.kubernetes.io/aws-load-balancer-type: "external"
+    service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "instance"
+    service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
+    service.beta.kubernetes.io/aws-load-balancer-alpn-policy: "HTTP2Preferred"
+    service.beta.kubernetes.io/aws-load-balancer-target-group-attributes: "deregistration_delay.connection_termination.enabled=true,deregistration_delay.timeout_seconds=16,stickiness.enabled=true,stickiness.type=source_ip"
+    service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "443"
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "http"
+    service.beta.kubernetes.io/aws-load-balancer-ssl-negotiation-policy: "ELBSecurityPolicy-TLS13-1-2-2021-06"
+
+# Configure ports
+ports:
+  traefik:
+    port: 9000
+    # You SHOULD NOT expose the traefik port on production deployments.
+    # If you want to access it from outside of your cluster,
+    # use `kubectl port-forward` or create a secure ingress
+    # expose: true
+    exposedPort: 9000
+    protocol: TCP
+  web:
+    port: 8000
+    expose: true
+    exposedPort: 80
+    protocol: TCP
+    nodePort: 30442
+    # https://docs.traefik.io/routing/entrypoints/#redirection
+    redirectTo: websecure
+  websecure:
+    port: 8443
+    expose: true
+    exposedPort: 443
+    protocol: TCP
+    nodePort: 30443
+
+
+# Logs
+# https://docs.traefik.io/observability/logs/
+logs:
+  # Traefik logs concern everything that happens to Traefik itself (startup, configuration, events, shutdown, and so on).
+  general:
+    # By default, the logs use a text format (common), but you can
+    # also ask for the json format in the format option
+    # format: json
+    # By default, the level is set to ERROR. Alternative logging levels are DEBUG, PANIC, FATAL, ERROR, WARN, and INFO.
+    level: INFO
+  access:
+    # To enable access logs
+    enabled: true
+
+resources:
+  requests:
+    cpu: "25m"
+    memory: "1024Mi"
+  limits:
+    cpu: "1500m"
+    memory: "2512Mi"

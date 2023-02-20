@@ -1,0 +1,32 @@
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: {{ .Chart.Name }}-ingress-rules
+  labels:
+    environment: {{ .Values.container.environment }}
+    method: traefik
+  annotations:
+    kubernetes.io/ingress.class: ingress-traefik-{{ .Values.container.environment }}
+spec:
+  entryPoints:
+  - websecure
+  - web
+  routes:
+  - kind: Rule
+    match: {{- range $i, $e := $.Values.ingress.paths }} {{if $i}}|| {{end}}PathPrefix(`{{ .path }}`){{- end }}
+    services:
+    - name: {{ $.Chart.Name }}
+      port: {{ $.Values.ingress.servicePort }}
+      sticky:
+        cookie:
+          httpOnly: true
+          name: appcookie
+          secure: true
+          sameSite: none
+    middlewares:
+      - name: traefik-ingress-web-compress@kubernetescrd
+      - name: traefik-ingress-web-log4shell@kubernetescrd
+      - name: traefik-ingress-web-geoip2@kubernetescrd
+      - name: traefik-ingress-web-header@kubernetescrd
+      - name: traefik-ingress-web-proxybuffering@kubernetescrd

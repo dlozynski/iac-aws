@@ -1,0 +1,21 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: {{ .Chart.Name }}
+  labels:
+    app: {{ .Chart.Name }}
+    env: {{ .Values.container.env }}
+    region: {{ .Values.container.region }}
+    subregion: {{ .Values.container.subregion }}
+spec:
+  ports:
+    # - protocol: TCP
+    - port: {{ .Values.container.port }}
+      targetPort: {{ .Values.container.containerPort }}
+      # name: {{ .Values.container.portName }}
+  selector:
+    app: {{ .Chart.Name }}
+    env: {{ .Values.container.env }}
+    region: {{ .Values.container.region }}
+    subregion: {{ .Values.container.subregion }}

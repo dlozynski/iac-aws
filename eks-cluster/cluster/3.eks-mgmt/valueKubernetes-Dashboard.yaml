@@ -1,0 +1,24 @@
+## Metrics Scraper
+## Container to scrape, store, and retrieve a window of time from the Metrics Server.
+## refs: https://github.com/kubernetes-sigs/dashboard-metrics-scraper
+metricsScraper:
+  ## Wether to enable dashboard-metrics-scraper
+  enabled: true
+## Optional Metrics Server sub-chart
+## Enable this if you don't already have metrics-server enabled on your cluster and
+## want to use it with dashboard metrics-scraper
+## refs:
+##  - https://github.com/kubernetes-sigs/metrics-server
+##  - https://github.com/kubernetes-sigs/metrics-server/tree/master/charts/metrics-server
+metrics-server:
+  enabled: true
+
+rbac:
+  # Specifies whether namespaced RBAC resources (Role, Rolebinding) should be created
+  create: true
+  clusterRoleMetrics: true
+  clusterReadOnlyRole: false
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true

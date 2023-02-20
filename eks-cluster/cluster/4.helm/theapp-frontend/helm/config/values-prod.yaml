@@ -1,0 +1,26 @@
+---
+container:
+  replicas: 1
+  tag: "v1.0"
+  env: prod
+  environment: production
+  region: eu
+  subregion: irl
+  resources:
+    limits:
+      memory: "256M"
+    requests:
+      memory: "32M"
+  robots: false
+
+ingress:
+  hosts:
+    - name: app.theapp.co
+  paths:
+    - path: /settings
+    - path: /account
+    - path: /subscribe
+    - path: /static
+
+configs:
+  LANG: C.UTF-8 #fix for special characters
