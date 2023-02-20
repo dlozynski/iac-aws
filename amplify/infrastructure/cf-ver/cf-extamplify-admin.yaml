@@ -1,0 +1,204 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: Stack for Amplify App Admin
+
+Parameters:
+  AppName:
+    Description: App name
+    Default: "ext-amplify-develop-admin"
+    Type: String
+  RoleName:
+    Description: Role name
+    Default: "AmplifyDevelopRole"
+    Type: String
+  TagEnv:
+    Description: Env name
+    Default: "develop"
+    Type: String
+  OAuthToken:
+    Type: String
+    Default: "oauthtokent-very-Longish-xxxxxxxxxx-4Hoeen=="
+    Description: GitHub access token
+    NoEcho: true
+  Repository:
+    Description: Bitbucket Cloud repository URL for Amplify app
+    Default: "https://github.com/dlozynski/ext-amplify"
+    Type: String
+  MainBranchName:
+    Description: Main branch
+    Default: "master"
+    Type: String
+  BackendMasterBranchName:
+    Description: Backend master name
+    Default: "master"
+    Type: String
+  BackendDevelopmentBranchName:
+    Description: Backend master name
+    Default: "stagingva"
+    Type: String
+  DevelopmentBranchName:
+    Description: Development branch
+    Default: "staging"
+    Type: String
+  Environment:
+    Description: Backend environment related to this branch
+    Default: "master"
+    Type: String
+
+Resources:
+  AmplifyAdminApp:
+    Type: AWS::Amplify::App
+    Properties:
+      Name:       !Ref AppName
+      OauthToken: !Ref OAuthToken
+      Repository: !Ref Repository
+      IAMServiceRole:
+        "Fn::ImportValue":
+          "Fn::Join":
+            - ''
+            - - "amplify-"
+              - !Ref RoleName
+              - ":iam:"
+              - !Ref TagEnv
+              - "-role-arn"
+      Description: "experimental testing for AWS CF"
+      EnableBranchAutoDeletion: true
+      AutoBranchCreationConfig:
+        AutoBranchCreationPatterns:
+          - " "
+        EnableAutoBranchCreation: false
+      BasicAuthConfig:
+        EnableBasicAuth: false
+        # Password: "test123"
+        # Username: "test123"
+      CustomRules:
+        - Source: "</^[^.]+$|\\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|woff2|ttf|map|json|webp)$)([^.]+$)/>"
+          Status: "200"
+          Target: "/index.html"
+      EnvironmentVariables:
+        - Name: AMPLIFY_FACEBOOK_CLIENT_ID
+          Value: "123856123761321"
+        - Name: AMPLIFY_FACEBOOK_CLIENT_SECRET
+          Value: "abcda2b8a5d212345678a050a5faeabcd"
+        - Name: AMPLIFY_GOOGLE_CLIENT_ID
+          Value: "1230046123123-hjb2323i23ihi3ufake.apps.googleusercontent.com"
+        - Name: AMPLIFY_GOOGLE_CLIENT_SECRET
+          Value: "GOGADGET-ABCDabcd12344312-abcd123"
+        - Name: AMPLIFY_AMAZON_CLIENT_ID
+          Value: "amzn1.application-oa2-client.hjb2323i23ihi3ufake"
+        - Name: AMPLIFY_AMAZON_CLIENT_SECRET
+          Value: "hjb2323i23ihi3ufakehjb2323i23ihi3ufakehjb2323i23ihi3ufake"
+        - Name: AMPLIFY_DIFF_DEPLOY
+          Value: "false"
+        - Name: AMPLIFY_IDENTITYPOOL_ID
+          Value: "eu-west-2:123asd-abcd-abcd-1234-fake12345"
+        - Name: AMPLIFY_MONOREPO_APP_ROOT
+          Value: "admin"
+        - Name: AMPLIFY_NATIVECLIENT_ID
+          Value: "hjb2323i23ihi3ufake"
+        - Name: AMPLIFY_USERPOOL_ID
+          Value: "eu-west-1_AB123abcd"
+        - Name: AMPLIFY_WEBCLIENT_ID
+          Value: "hjb2323i23ihi3ufake"
+        - Name: _LIVE_UPDATES
+          Value: '[{"pkg":"@aws-amplify/cli","type":"npm","version":"9.0.0"},{"pkg":"node","type":"nvm","version":"16"},{"pkg":"yarn","type":"npm","version":"latest"}]'
+      BuildSpec: |-
+        version: 1
+        applications:
+          - backend:
+              phases:
+                build:
+                  commands:
+                    - amplifyPush --simple
+            frontend:
+              phases:
+                preBuild:
+                  commands:
+                    - npm ci
+                build:
+                  commands:
+                    - npm run build
+              artifacts:
+                baseDirectory: build
+                files:
+                  - '**/*'
+              cache:
+                paths:
+                  - node_modules/**/*
+            appRoot: admin
+      Tags:
+        - Key: Type
+          Value: !Ref TagEnv
+
+# Role for Amplify
+# import from stack
+
+# Branch configuration
+  MainAmplifyAdminBranch:
+    Type: AWS::Amplify::Branch
+    Properties:
+      AppId: !GetAtt AmplifyAdminApp.AppId
+      BranchName: !Ref MainBranchName
+      Description: Main branch for Amplify app
+      EnableAutoBuild: true
+      EnablePerformanceMode: false
+      EnablePullRequestPreview: false
+      Stage: "PRODUCTION"
+      EnvironmentVariables:
+        - Name: USER_BRANCH
+          Value: !Ref BackendMasterBranchName
+        - Name: AMPLIFY_BACKEND_PULL_ONLY
+          Value: "true"
+        - Name: AMPLIFY_BACKEND_APP_ID
+          Value:
+            "Fn::ImportValue":
+              "Fn::Join":
+                - ""
+                - - "amplify-im-main-"
+                  - !Ref TagEnv
+                  - "-app-id"
+
+  DevelopmentAmplifyAdminBranch:
+    Type: AWS::Amplify::Branch
+    Properties:
+      AppId: !GetAtt AmplifyAdminApp.AppId
+      BranchName: !Ref DevelopmentBranchName
+      Description: Deployment branch for Amplify app
+      EnableAutoBuild: true
+      EnablePerformanceMode: false
+      EnablePullRequestPreview: false
+      Stage: "DEVELOPMENT"
+      EnvironmentVariables:
+        - Name: USER_BRANCH
+          Value: !Ref BackendDevelopmentBranchName
+        - Name: AMPLIFY_BACKEND_PULL_ONLY
+          Value: "true"
+        - Name: AMPLIFY_BACKEND_APP_ID
+          Value:
+            "Fn::ImportValue":
+              "Fn::Join":
+                - ""
+                - - "amplify-im-main-"
+                  - !Ref TagEnv
+                  - "-app-id"
+
+Outputs:
+  AmplifyAdminAppName:
+    Description: "Name of role used in Amplify"
+    Value: !Ref AmplifyAdminApp
+    Export:
+      Name: !Join
+          - ""
+          - - "amplify-im-admin-"
+            - !Ref TagEnv
+            - "-app-name"
+
+  AmplifyAdminAppId:
+    Description: "Name of role used in Aplify"
+    Value: !GetAtt AmplifyAdminApp.AppId
+    Export:
+      Name: !Join
+          - ""
+          - - "amplify-im-admin-"
+            - !Ref TagEnv
+            - "-app-id"
